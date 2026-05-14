@@ -1,0 +1,33 @@
+{
+  "name": "DeepSeek-MenuBar",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server/index.js",
+  "scripts": {
+    "dev": "nodemon src/server/index.js",
+    "start": "node src/server/index.js",
+    "crawler": "node src/jobs/crawl-usage-export.js",
+    "crawler:install-chrome": "pnpm exec puppeteer browsers install chrome"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "puppeteer"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "axios": "^1.16.1",
+    "csv-parse": "^6.2.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14",
+    "puppeteer": "^24.43.1"
+  }
+}

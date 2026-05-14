@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API 测试面板</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f1419;
+      --card: #1a2332;
+      --border: #2d3a4d;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --ok: #3fb950;
+      --err: #f85149;
+      --btn: #238636;
+      --btn2: #21262d;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f6f8fa;
+        --card: #fff;
+        --border: #d0d7de;
+        --text: #1f2328;
+        --muted: #656d76;
+        --btn: #2da44e;
+        --btn2: #f6f8fa;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 1rem 1.25rem 2rem;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .field label {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      min-width: 12rem;
+      padding: 0.45rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .field.wide input {
+      min-width: min(100%, 22rem);
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--btn);
+      color: #fff;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: var(--btn2);
+      color: var(--text);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--bg);
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    code.path {
+      font-size: 0.75rem;
+      word-break: break-all;
+      color: var(--muted);
+    }
+
+    .status {
+      font-weight: 600;
+    }
+
+    .status.ok {
+      color: var(--ok);
+    }
+
+    .status.fail {
+      color: var(--err);
+    }
+
+    pre.out {
+      margin: 0;
+      max-height: 10rem;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.75rem;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .row-actions button {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>本地 API 接口测试</h1>
+  <p class="hint">请从本服务打开：<code>/api-test</code>（同源）。用量接口若配置了 <code>USAGE_API_TOKEN</code>，请在下方填写。</p>
+
+  <div class="toolbar">
+    <div class="field wide">
+      <label for="baseUrl">Base URL</label>
+      <input type="text" id="baseUrl" autocomplete="off" placeholder="http://localhost:3000">
+    </div>
+    <div class="field wide">
+      <label for="usageToken">USAGE_API_TOKEN（仅 /usage/*）</label>
+      <input type="password" id="usageToken" autocomplete="off" placeholder="可选">
+    </div>
+    <div class="field">
+      <label for="qFrom">筛选 from (YYYY-MM-DD)</label>
+      <input type="text" id="qFrom" placeholder="如 2026-05-01">
+    </div>
+    <div class="field">
+      <label for="qTo">筛选 to</label>
+      <input type="text" id="qTo" placeholder="如 2026-05-31">
+    </div>
+    <div class="field">
+      <label for="qDay">单日费用 utcDate</label>
+      <input type="text" id="qDay" value="2026-05-06">
+    </div>
+    <div class="field">
+      <label for="qLimit">limit / offset</label>
+      <input type="text" id="qLimit" value="10" title="limit" style="width:4rem">
+      <input type="text" id="qOffset" value="0" title="offset" style="width:4rem;margin-top:0.25rem">
+    </div>
+    <button type="button" id="runAll">运行全部</button>
+    <button type="button" id="clearOut" class="secondary">清空结果列</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>说明</th>
+        <th>路径</th>
+        <th>操作</th>
+        <th>HTTP</th>
+        <th>响应</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script>
+    (function () {
+      const baseInput = document.getElementById('baseUrl');
+      const tokenInput = document.getElementById('usageToken');
+      const qFrom = document.getElementById('qFrom');
+      const qTo = document.getElementById('qTo');
+      const qDay = document.getElementById('qDay');
+      const qLimit = document.getElementById('qLimit');
+      const qOffset = document.getElementById('qOffset');
+      const tbody = document.getElementById('rows');
+
+      baseInput.value = window.location.origin;
+
+      function base() {
+        return baseInput.value.replace(/\/+$/, '');
+      }
+
+      function extraQuery() {
+        const p = new URLSearchParams();
+        const from = qFrom.value.trim();
+        const to = qTo.value.trim();
+        if (from) p.set('from', from);
+        if (to) p.set('to', to);
+        const s = p.toString();
+        return s ? '&' + s : '';
+      }
+
+      function listQuery() {
+        const lim = qLimit.value.trim() || '10';
+        const off = qOffset.value.trim() || '0';
+        return `limit=${encodeURIComponent(lim)}&offset=${encodeURIComponent(off)}${extraQuery().replace(/^&/, '&')}`;
+      }
+
+      const tests = [
+        { id: 'root', label: '服务索引', path: '/', usage: false },
+        { id: 'health', label: '健康检查', path: '/health', usage: false },
+        { id: 'balance', label: '账户余额', path: '/user/balance', usage: false },
+        { id: 'u-meta', label: '用量 meta', path: '/usage/meta', usage: true },
+        { id: 'u-dash', label: '用量 dashboard', path: '/usage/dashboard', usage: true },
+        { id: 'u-cr', label: '费用日期范围', path: '/usage/cost/range', usage: true },
+        { id: 'u-cm', label: '费用 models', path: '/usage/cost/models', usage: true },
+        { id: 'u-cs', label: '费用汇总 day', getPath: () => '/usage/cost/summary?groupBy=day' + extraQuery(), usage: true },
+        { id: 'u-cs2', label: '费用汇总 month', getPath: () => '/usage/cost/summary?groupBy=month' + extraQuery(), usage: true },
+        {
+          id: 'u-cd',
+          label: '单日费用',
+          getPath: () => '/usage/cost/day/' + encodeURIComponent(qDay.value.trim() || '2026-05-06'),
+          usage: true,
+        },
+        {
+          id: 'u-cl',
+          label: '费用列表',
+          getPath: () => '/usage/cost?' + listQuery(),
+          usage: true,
+        },
+        { id: 'u-at', label: '用量 types', path: '/usage/amount/types', usage: true },
+        {
+          id: 'u-ab',
+          label: '用量按 type 汇总',
+          getPath: () => '/usage/amount/by-type' + (extraQuery() ? '?' + extraQuery().slice(1) : ''),
+          usage: true,
+        },
+        { id: 'u-ct', label: '缓存 token 汇总', path: '/usage/amount/cache-tokens', usage: true },
+        { id: 'u-ctd', label: '缓存 token 按日', path: '/usage/amount/cache-tokens?groupBy=day', usage: true },
+        {
+          id: 'u-al',
+          label: '用量明细列表',
+          getPath: () => '/usage/amount?' + listQuery(),
+          usage: true,
+        },
+      ];
+
+      function resolvePath(t) {
+        return typeof t.getPath === 'function' ? t.getPath() : t.path;
+      }
+
+      async function callOne(t) {
+        const path = resolvePath(t);
+        const url = base() + path;
+        const headers = { Accept: 'application/json' };
+        const tok = tokenInput.value.trim();
+        if (t.usage && tok) {
+          headers['Authorization'] = 'Bearer ' + tok;
+        }
+        const res = await fetch(url, { headers });
+        const text = await res.text();
+        let body;
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = text;
+        }
+        return { path, status: res.status, ok: res.ok, body };
+      }
+
+      function fmtBody(body) {
+        if (typeof body === 'string') return body;
+        return JSON.stringify(body, null, 2);
+      }
+
+      function rowEls(id) {
+        return {
+          status: document.querySelector('[data-cell="status"][data-id="' + id + '"]'),
+          out: document.querySelector('[data-cell="out"][data-id="' + id + '"]'),
+        };
+      }
+
+      async function runRow(t) {
+        const { status, out } = rowEls(t.id);
+        status.textContent = '…';
+        status.className = 'status';
+        out.textContent = '';
+        try {
+          const r = await callOne(t);
+          status.textContent = String(r.status);
+          status.className = 'status ' + (r.ok ? 'ok' : 'fail');
+          out.textContent = fmtBody(r.body);
+        } catch (e) {
+          status.textContent = 'ERR';
+          status.className = 'status fail';
+          out.textContent = e.message || String(e);
+        }
+      }
+
+      tests.forEach((t) => {
+        const path = resolvePath(t);
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' +
+          escapeHtml(t.label) +
+          '</td>' +
+          '<td><code class="path">' +
+          escapeHtml(path) +
+          '</code></td>' +
+          '<td class="row-actions"><button type="button" data-run="' +
+          escapeHtml(t.id) +
+          '">请求</button></td>' +
+          '<td class="status" data-cell="status" data-id="' +
+          escapeHtml(t.id) +
+          '">—</td>' +
+          '<td><pre class="out" data-cell="out" data-id="' +
+          escapeHtml(t.id) +
+          '"></pre></td>';
+        tbody.appendChild(tr);
+      });
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      tbody.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-run]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-run');
+        const t = tests.find((x) => x.id === id);
+        if (t) runRow(t);
+      });
+
+      document.getElementById('runAll').addEventListener('click', async () => {
+        const btn = document.getElementById('runAll');
+        btn.disabled = true;
+        for (const t of tests) {
+          await runRow(t);
+        }
+        btn.disabled = false;
+      });
+
+      document.getElementById('clearOut').addEventListener('click', () => {
+        tests.forEach((t) => {
+          const { status, out } = rowEls(t.id);
+          status.textContent = '—';
+          status.className = 'status';
+          out.textContent = '';
+        });
+      });
+    })();
+  </script>
+</body>
+
+</html>
