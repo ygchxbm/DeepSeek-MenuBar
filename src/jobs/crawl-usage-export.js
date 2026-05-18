@@ -15,7 +15,7 @@ const USAGE_EXPORT_DIR = path.join(__dirname, '..', '..', 'usage-exports');
 const WAIT_EXPORT_MS = 5 * 60 * 1000;
 const WAIT_FILE_MS = 3 * 60 * 1000;
 /** 无头模式下等待「导出」的最长时间（毫秒），可用 CRAWLER_HEADLESS_PROBE_MS 覆盖 */
-const DEFAULT_HEADLESS_PROBE_MS = 90 * 1000;
+const DEFAULT_HEADLESS_PROBE_MS = 30 * 1000;
 
 class ExportButtonTimeoutError extends Error {
   constructor(message, options) {
@@ -24,28 +24,28 @@ class ExportButtonTimeoutError extends Error {
   }
 }
 
-function sleep(ms) {
+function sleep (ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function envTruthy(name) {
+function envTruthy (name) {
   const v = String(process.env[name] ?? '').trim().toLowerCase();
   return v === '1' || v === 'true' || v === 'yes';
 }
 
-function isTimeoutError(err) {
+function isTimeoutError (err) {
   if (!err) return false;
   if (err.name === 'TimeoutError') return true;
   if (err instanceof ExportButtonTimeoutError) return false;
   return /waiting failed: \d+ms exceeded|timeout/i.test(String(err.message || ''));
 }
 
-function isExportFile(name) {
+function isExportFile (name) {
   const lower = name.toLowerCase();
   return lower.endsWith('.csv') || lower.endsWith('.zip');
 }
 
-async function waitForStableExportFile(dir, sinceMs, timeoutMs) {
+async function waitForStableExportFile (dir, sinceMs, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   let last = null;
   let stableTicks = 0;
@@ -96,11 +96,11 @@ async function waitForStableExportFile(dir, sinceMs, timeoutMs) {
 
   throw new Error(
     '等待导出文件超时：平台可能下载为 .zip 或 .csv。若文件进了系统「下载」文件夹，请检查 CDP 下载目录是否生效，或将文件移入：' +
-      path.resolve(dir)
+    path.resolve(dir)
   );
 }
 
-function exportButtonPredicate() {
+function exportButtonPredicate () {
   const nodes = Array.from(
     document.querySelectorAll('button, [role="button"], a.ant-btn, .ant-btn')
   );
@@ -122,7 +122,7 @@ function exportButtonPredicate() {
   return Boolean(r.singleNodeValue);
 }
 
-async function waitForExportButton(page, timeoutMs) {
+async function waitForExportButton (page, timeoutMs) {
   try {
     await page.waitForFunction(exportButtonPredicate, { timeout: timeoutMs });
   } catch (e) {
@@ -133,7 +133,7 @@ async function waitForExportButton(page, timeoutMs) {
   }
 }
 
-async function clickExport(page) {
+async function clickExport (page) {
   const viaDom = await page.evaluate(() => {
     const nodes = Array.from(
       document.querySelectorAll('button, [role="button"], a.ant-btn, .ant-btn')
@@ -165,7 +165,7 @@ async function clickExport(page) {
   throw new Error('未找到「导出」按钮：请在用量页确认「每月用量」已加载，或页面结构已变更');
 }
 
-async function launchBrowser(headless) {
+async function launchBrowser (headless) {
   const launchOpts = {
     headless,
     userDataDir: USER_DATA_DIR,
@@ -191,7 +191,7 @@ async function launchBrowser(headless) {
  * 单次完整流程：打开用量页 → 等「导出」→ 点击 → 等文件落地
  * @param {{ headless: boolean, exportWaitMs: number }} opts
  */
-async function runExportOnce(opts) {
+async function runExportOnce (opts) {
   const { headless, exportWaitMs } = opts;
   const modeLabel = headless ? '无头' : '有界面';
   const browser = await launchBrowser(headless);
@@ -227,11 +227,11 @@ async function runExportOnce(opts) {
     console.log('完成:', savedPath);
     return savedPath;
   } finally {
-    await browser.close().catch(() => {});
+    await browser.close().catch(() => { });
   }
 }
 
-async function main() {
+async function main () {
   await fs.mkdir(USER_DATA_DIR, { recursive: true });
   await fs.mkdir(USAGE_EXPORT_DIR, { recursive: true });
 
@@ -267,7 +267,7 @@ async function main() {
   }
 }
 
-async function postImport(savedPath) {
+async function postImport (savedPath) {
   console.log('数据库文件:', getDbPath());
   console.log('正在解压（若为 zip）并导入 SQLite…');
   const result = importUsageAfterDownload(savedPath, { downloadDir: USAGE_EXPORT_DIR });
